@@ -10,11 +10,6 @@ from PyQt5.QtWidgets import QToolBar, QAction, QStatusBar, QShortcut, QFileDialo
 
 import glob
 
-# TODO: create annotations file on video end
-# TODO: progress bar for number of videos/total videos
-# TODO: transition to next video on video end
-# TODO: Hide/show next/back buttons on edges.
-# TODO: share on github
 
 class Player(QtWidgets.QMainWindow):
 
@@ -74,6 +69,7 @@ class Player(QtWidgets.QMainWindow):
 
         self.current_annotation = "A"
 
+        is_video_set = False
         for i, video_path in enumerate(self.video_paths):
 
             if "\\" in video_path:
@@ -83,33 +79,39 @@ class Player(QtWidgets.QMainWindow):
 
             if video_name not in self.annotations:
                 self.file = self.OpenFile(video_path)
-                self.current_video_attrs = {
+
+                self.current_video_attrs = self.annotations.get(video_name, {
                     "name": video_name,
                     "path": video_path,
                     "annotations": {}
-                }
+                })
+                self.annotations[self.current_video_attrs["name"]] = self.current_video_attrs
                 self.current_video = i
+
+                is_video_set = True
 
                 break
 
-        if self.current_video == 0:
+        if not is_video_set:
             video_path = self.video_paths[0]
             if "\\" in video_path:
                 video_name = video_path.split("\\")[-1]
             else:
                 video_name = video_path.split("/")[-1]
             self.file = self.OpenFile(video_path)
-            self.current_video_attrs = {
+            self.current_video_attrs = self.annotations.get(video_name, {
                 "name": video_name,
                 "path": video_path,
                 "annotations": {}
-            }
-            self.markwidget.setAnnotations(self.current_video_attrs["annotations"])
-            self.markwidget.repaint()
+            })
+
+            self.annotations[self.current_video_attrs["name"]] = self.current_video_attrs
+
+        self.play()
 
         self.next_visible = True
         self.prev_visible = True
-        self.setPrevNextVisibility()
+        self.setVisibilities()
 
     def setPrevNextVisibility(self):
         self.prev_visible = self.current_video != 0
@@ -150,21 +152,10 @@ class Player(QtWidgets.QMainWindow):
 
     def removeAnnotations(self):
 
-        self.annotations[self.current_video_attrs["name"]] = {
-            "name": self.current_video_attrs["name"],
-            "path": self.current_video_attrs["path"],
-            "annotations": {}
-        }
         self.current_video_attrs["annotations"] = {}
+        self.annotations[self.current_video_attrs["name"]] = self.current_video_attrs
 
-        annotation_path = os.path.join(self.annotations_dir, self.current_video_attrs["name"] + ".json")
-        if os.path.isfile(annotation_path):
-            os.remove(annotation_path)
-
-        self.setPrevNextVisibility()
-
-        self.markwidget.setAnnotations(self.current_video_attrs["annotations"])
-        self.markwidget.repaint()
+        self.setVisibilities()
 
     def previousShortcut(self):
         if self.prev_visible:
@@ -174,26 +165,19 @@ class Player(QtWidgets.QMainWindow):
         if self.next_visible:
             self.next()
 
-    def annotate(self):
-        if not self.mediaplayer.is_playing():
-            return
-
-        if self.current_video_attrs["name"] not in self.annotations:
-            self.annotations[self.current_video_attrs["name"]] = {
-                "name": self.current_video_attrs["name"],
-                "path": self.current_video_attrs["path"],
-                "annotations": {}
-            }
-        if self.current_annotation not in self.annotations[self.current_video_attrs["name"]]["annotations"]:
-            self.annotations[self.current_video_attrs["name"]]["annotations"][self.current_annotation] = []
-            self.current_video_attrs["annotations"][self.current_annotation] = []
-
-        self.annotations[self.current_video_attrs["name"]]["annotations"][self.current_annotation].append(self.mediaplayer.get_position())
-        self.current_video_attrs["annotations"][self.current_annotation].append(self.mediaplayer.get_position())
+    def setVisibilities(self):
         self.setPrevNextVisibility()
 
         self.markwidget.setAnnotations(self.annotations[self.current_video_attrs["name"]]["annotations"])
-        self.markwidget.repaint()
+
+    def annotate(self):
+
+
+        self.current_video_attrs["annotations"][self.current_annotation] = [self.mediaplayer.get_position()] + self.current_video_attrs["annotations"].get(self.current_annotation, [])
+
+        self.annotations[self.current_video_attrs["name"]] = self.current_video_attrs
+
+        self.setVisibilities()
 
 
     def saveAnnotation(self, annotation):
@@ -276,38 +260,39 @@ class Player(QtWidgets.QMainWindow):
         else:
             video_name = video_path.split("/")[-1]
 
-        self.file = self.OpenFile(video_path)
-        self.current_video_attrs = {
-            "name": video_name,
-            "path": video_path,
-            "annotations": {}
-        }
 
-        # TODO: fix annotation bug for next/prev/initial annotation states
+        self.file = self.OpenFile(video_path)
+
+        if video_name in self.annotations:
+            self.current_video_attrs = self.annotations[video_name]
+        else:
+            self.current_video_attrs = {
+                "name": video_name,
+                "path": video_path,
+                "annotations": {}
+            }
+
+            self.annotations[video_name] = self.current_video_attrs
+
 
         self.progress.setValue(self.current_video)
-        self.setPrevNextVisibility()
 
-        self.markwidget.setAnnotations(self.current_video_attrs["annotations"])
-        self.markwidget.repaint()
+        self.setVisibilities()
+        self.play()
 
     def next(self):
         print("Next clicked")
 
-        if self.current_video_attrs["name"] not in self.annotations:
-            self.annotations[self.current_video_attrs["name"]] = {
-                "name": self.current_video_attrs["name"],
-                "path": self.current_video_attrs["path"],
-                "annotations": {}
-            }
+        self.saveAnnotation(self.current_video_attrs)
 
-        self.saveAnnotation(self.annotations[self.current_video_attrs["name"]])
-
-
-        if self.current_video + 1 == self.num_videos:
-            return
 
         self.current_video += 1
+
+        if self.current_video == self.num_videos:
+            QtWidgets.QMessageBox.question(self, "No more videos left.", "All videos are annotated. Now, opening the first video...",
+            QtWidgets.QMessageBox.Ok)
+            self.current_video = 0
+
         video_path = self.video_paths[self.current_video]
 
         if "\\" in video_path:
@@ -315,18 +300,24 @@ class Player(QtWidgets.QMainWindow):
         else:
             video_name = video_path.split("/")[-1]
 
+
         self.file = self.OpenFile(video_path)
-        self.current_video_attrs = {
-            "name": video_name,
-            "path": video_path,
-            "annotations": {}
-        }
+
+        if video_name in self.annotations:
+            self.current_video_attrs = self.annotations[video_name]
+        else:
+            self.current_video_attrs = {
+                "name": video_name,
+                "path": video_path,
+                "annotations": {}
+            }
+
+            self.annotations[video_name] = self.current_video_attrs
 
         self.progress.setValue(self.current_video)
-        self.setPrevNextVisibility()
 
-        self.markwidget.setAnnotations(self.current_video_attrs["annotations"])
-        self.markwidget.repaint()
+        self.setVisibilities()
+        self.play()
 
     def createUI(self):
         """Set up the user interface, signals & slots
@@ -393,6 +384,7 @@ class Player(QtWidgets.QMainWindow):
         """
         self.mediaplayer.stop()
 
+
     def OpenFile(self, filename=None):
         """Open a media file in a MediaPlayer
         """
@@ -427,7 +419,6 @@ class Player(QtWidgets.QMainWindow):
             self.mediaplayer.set_hwnd(self.videoframe.winId())
         elif sys.platform == "darwin": # for MacOS
             self.mediaplayer.set_nsobject(int(self.videoframe.winId()))
-        self.PlayPause()
 
 
     def setPosition(self, position):
@@ -449,6 +440,10 @@ class Player(QtWidgets.QMainWindow):
             # no need to call this function if nothing is played
             self.timer.stop()
 
+            if not self.isPaused:
+                self.Stop()
+                self.next()
+
 class MarkWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -465,6 +460,8 @@ class MarkWidget(QtWidgets.QWidget):
 
     def setAnnotations(self, annotations):
         self.annotations = annotations
+
+        self.repaint()
 
 
     def drawWidget(self, qp):
@@ -492,7 +489,7 @@ class MarkWidget(QtWidgets.QWidget):
 
         for key, poslist in self.annotations.items():
             for pos in poslist:
-                x = int(round(w*pos))
+                x = int(w*pos)
                 metrics = qp.fontMetrics()
                 qp.drawLine(x, 0, x, h)
                 fw = metrics.width(key)
