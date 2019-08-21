@@ -253,6 +253,11 @@ class Player(QtWidgets.QMainWindow):
         if self.current_video - 1 < 0:
             return
 
+        self.saveAnnotation(self.current_video_attrs)
+
+        if not self.isPaused:
+            self.Stop()
+
         self.current_video -= 1
         video_path = self.video_paths[self.current_video]
         if "\\" in video_path:
@@ -285,6 +290,8 @@ class Player(QtWidgets.QMainWindow):
 
         self.saveAnnotation(self.current_video_attrs)
 
+        if not self.isPaused:
+            self.Stop()
 
         self.current_video += 1
 
