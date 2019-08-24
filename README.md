@@ -25,8 +25,8 @@ Bilkent Video Annotation Tool helps to annotate positions in videos possibly for
 * [Anaconda3](https://www.anaconda.com/distribution/#download-section)
 
 ### Installing Instructions
-* git clone 
-* Execute `conda env create -f env.yml`
+* Execute `git clone https://github.com/selimfirat/bilkent-video-annotation-tool.git` in shell.
+* Execute `conda env create -f env.yml` in shell.
 
 ### Running Instructions
 1. Execute `conda activate video-activation-tool` in shell.
