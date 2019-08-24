@@ -33,6 +33,7 @@ Bilkent Video Annotation Tool helps to annotate positions in videos possibly for
 2. Execute `python main.py` in shell.
 3. Select directory containing videos to be annotated at first file dialog.
 4. Select directory to put annotations (should contain current annotations if there is) at second file dialog.
+5. Use shortcuts or the icons in menu to proceed.
 
 ### Annotation Format
 ```
@@ -59,5 +60,5 @@ Bilkent Video Annotation Tool helps to annotate positions in videos possibly for
 * Annotated frame corresponds to `annotated_position*total_number_of_frames_in_video`.
 
 ### References
-Video player icons by https://www.flaticon.com/packs/music-player-icons
-App icon:: https://www.flaticon.com/free-icon/pikachu_188987#term=pikachu&page=1&position=1
+* Video player icons: https://www.flaticon.com/packs/music-player-icons
+* App icon: https://www.flaticon.com/free-icon/pikachu_188987#term=pikachu&page=1&position=1
