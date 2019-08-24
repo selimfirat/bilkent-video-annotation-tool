@@ -1,4 +1,4 @@
-#![App Icon](icons/pikachu.png) Bilkent Video Annotation Tool
+# ![App Icon](icons/pikachu.png) Bilkent Video Annotation Tool
 Bilkent Video Annotation Tool helps to annotate positions in videos possibly for events later to be processed.
 
 ### Features
