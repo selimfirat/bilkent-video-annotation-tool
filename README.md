@@ -1,6 +1,8 @@
 # ![App Icon](icons/pikachu.png) Bilkent Video Annotation Tool
 Bilkent Video Annotation Tool helps to annotate positions in videos possibly for events later to be processed.
 
+![App Overview](app.png)
+
 ### Features
 * Developed to be time efficient.
 * Supports keyboard shortcuts.
@@ -9,8 +11,6 @@ Bilkent Video Annotation Tool helps to annotate positions in videos possibly for
 * Stateful so it continues from the first unannotated video.
 * Stores each video's annotation persistently when the video ends or next button is clicked.
 * Shows progress at bottom progress bar.
-
-![App Overview](app.png)
 
 ### Shortcuts
 * [Space] Annotate current video with current annotation type.
