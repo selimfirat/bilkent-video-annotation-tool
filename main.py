@@ -25,10 +25,14 @@ class Player(QtWidgets.QMainWindow):
 
         # options |= QFileDialog.DontUseNativeDialog
 
+        supported_formats = [".mp3", ".mp4", ".avi", ".wmv", ".mp4", ".mov", ".ogg", ".wav", ".ogm"]
+
         self.video_paths = []
         while len(self.video_paths) == 0:
             videos_dir = str(QFileDialog.getExistingDirectory(self, "Select Videos Directory", options=options))
-            self.video_paths = [f for f in glob.glob(videos_dir + "**/*.avi", recursive=False)] # TODO: support other formats, too
+            self.video_paths = []
+            for fmt in supported_formats:
+                self.video_paths += [f for f in glob.glob(videos_dir + "**/*"+fmt, recursive=False)]
             print(self.video_paths)
 
             if len(self.video_paths) == 0 or len(videos_dir) == 0:
@@ -63,11 +67,16 @@ class Player(QtWidgets.QMainWindow):
 
         self.createToolbar()
 
-        self.setStatusBar(QStatusBar(self))
+        self.statusbar = QStatusBar(self)
+
+        self.setStatusBar(self.statusbar)
+
+        self.current_annotation = "A"
+
+        self.statusbar.showMessage("Current Annotation: " + self.current_annotation)
 
         self.createShortcuts()
 
-        self.current_annotation = "A"
 
         is_video_set = False
         for i, video_path in enumerate(self.video_paths):
@@ -121,6 +130,8 @@ class Player(QtWidgets.QMainWindow):
         self.action_previous.setVisible(self.prev_visible)
         self.action_next.setVisible(self.next_visible)
         self.action_remove_annotations.setVisible(self.remove_visible)
+        self.statusbar.clearMessage()
+        self.statusbar.showMessage("Current Annotation: " + self.current_annotation)
 
     def createShortcuts(self):
         self.shortcut_playpause = QShortcut(QKeySequence(QtCore.Qt.Key_Return), self)
@@ -135,7 +146,7 @@ class Player(QtWidgets.QMainWindow):
         self.shortcut_annotate = QShortcut(QKeySequence(QtCore.Qt.Key_Space), self)
         self.shortcut_annotate.activated.connect(self.annotate)
 
-        self.shortcut_remove_annotation = QShortcut(QKeySequence(QtCore.Qt.Key_Shift), self) # TODO: Change key
+        self.shortcut_remove_annotation = QShortcut(QKeySequence(QtCore.Qt.Key_Backspace), self)
         self.shortcut_remove_annotation.activated.connect(self.removeAnnotations)
 
         for s in string.ascii_uppercase:
@@ -147,6 +158,8 @@ class Player(QtWidgets.QMainWindow):
 
         def annotationShortcut():
             self.current_annotation = s
+            self.statusbar.clearMessage()
+            self.statusbar.showMessage("Current Annotation: " + self.current_annotation)
 
         return annotationShortcut
 
@@ -218,7 +231,7 @@ class Player(QtWidgets.QMainWindow):
         toolbar.addAction(self.action_pause)
 
         self.action_previous = QAction(QIcon("icons/previous.png"), "Previous Video", self)
-        self.action_previous.setStatusTip("Previous Video [Right Arrow]")
+        self.action_previous.setStatusTip("Previous Video [Left Arrow]")
         self.action_previous.triggered.connect(self.previous)
         toolbar.addAction(self.action_previous)
 
@@ -234,7 +247,7 @@ class Player(QtWidgets.QMainWindow):
 
         self.action_remove_annotations = QAction(QIcon("icons/cancel.png"), "Remove current video's annotations", self)
         self.action_remove_annotations.triggered.connect(self.removeAnnotations)
-        self.action_remove_annotations.setStatusTip("Remove current video's annotations [Shift Key]")
+        self.action_remove_annotations.setStatusTip("Remove current video's annotations [Backspace Key]")
         toolbar.addAction(self.action_remove_annotations)
 
 
