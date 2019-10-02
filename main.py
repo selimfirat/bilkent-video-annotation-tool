@@ -1,7 +1,8 @@
 import json
 import sys
 import string
-import os.path
+import os
+import argparse
 import vlc
 from PyQt5 import QtGui, QtCore, QtWidgets
 from PyQt5.QtCore import QSize, Qt
@@ -13,10 +14,13 @@ import glob
 
 class Player(QtWidgets.QMainWindow):
 
-    def __init__(self, master=None):
+    def __init__(self, muted=False, save_frames=False, master=None):
         QtWidgets.QMainWindow.__init__(self, master)
         self.setWindowIcon(QIcon("icons/app.svg"))
         self.title = "Bilkent Video Annotation Tool"
+
+        self.muted = muted
+        self.save_frames = save_frames
 
         self.setWindowTitle(self.title)
         options = QFileDialog.Options()
@@ -192,6 +196,18 @@ class Player(QtWidgets.QMainWindow):
 
         self.setVisibilities()
 
+        if self.save_frames:
+            self.writeFrameToFile()
+
+    def writeFrameToFile(self):
+        path_to_save = os.path.join(self.annotations_dir, self.current_annotation)
+        if not os.path.exists(path_to_save):
+            os.mkdir(path_to_save)
+
+        frame_file_name = os.path.join(path_to_save, 
+                                       f'{self.current_video_attrs["name"]}_{str(self.mediaplayer.get_position())}'.replace(".", "_") + '.png')
+
+        self.mediaplayer.video_take_snapshot(0, frame_file_name, 0 , 0)
 
     def saveAnnotation(self, annotation):
         with open(os.path.join(self.annotations_dir, annotation["name"] + ".json"), "w+") as f:
@@ -208,6 +224,9 @@ class Player(QtWidgets.QMainWindow):
         self.instance = vlc.Instance()
 
         self.mediaplayer = self.instance.media_player_new()
+
+        if self.muted:
+            self.mediaplayer.audio_set_volume(0)
 
         self.isPaused = False
 
@@ -519,8 +538,18 @@ class MarkWidget(QtWidgets.QWidget):
 
 
 if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(
+        description='Bilkent video annotation.')
+    parser.add_argument('--muted', action='store_true',
+                        help=('Run muted.'))
+    parser.add_argument('--save_frames', action='store_true',
+                        help=('Save video frames as png files during annotation.'))
+
+    args = parser.parse_args()
+    
     app = QtWidgets.QApplication(sys.argv)
-    player = Player()
+    player = Player(args.muted, args.save_frames)
     player.show()
     player.resize(640, 480)
     sys.exit(app.exec_())
